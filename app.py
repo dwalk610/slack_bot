@@ -50,7 +50,7 @@ def format_for_at_upload(slack_json):
 # ------------------------------------------
 def airt_api_headers():
     airt_headers = {
-    'Authorization': f'Bearer {config.AIRT_API_TOKEN}',
+    'Authorization': f'Bearer {os.environ.get("AIRT_API_TOKEN")}',
     'Content-Type': 'application/json'
     }
     return airt_headers
@@ -61,8 +61,8 @@ def airt_api_url():
      which will be called to add a record
     '''
     airtable_api_url = 'https://api.airtable.com/v0/'
-    cust_fback_base_id = config.CUST_FBACK_BASE_ID
-    slack_bot_product_requests_table_id = config.SLACK_BOT_PRODUCT_REQUESTS_TABLE_ID
+    cust_fback_base_id = os.environ.get("CUST_FBACK_BASE_ID")
+    slack_bot_product_requests_table_id = os.environ.get("SLACK_BOT_PRODUCT_REQUESTS_TABLE_ID")
     create_record_url = f'{airtable_api_url}{cust_fback_base_id}/{slack_bot_product_requests_table_id}'
     return create_record_url
 
@@ -82,11 +82,10 @@ def airt_api_post(slack_json):
 
 # Initialize your app with your bot token and signing secret
 app = App(
-#     token=slack_bot_token_test_wrong,
-    token=config.SLACK_BOT_TOKEN,
-    signing_secret=config.SLACK_SIGNING_SECRET,
-#     token=os.environ.get("SLACK_BOT_TOKEN"),
-#     signing_secret=os.environ.get("SLACK_SIGNING_SECRET"),
+    # token=config.SLACK_BOT_TOKEN,
+    # signing_secret=config.SLACK_SIGNING_SECRET,
+    token=os.environ.get("SLACK_BOT_TOKEN"),
+    signing_secret=os.environ.get("SLACK_SIGNING_SECRET"),
 )
 
 # Add functionality here later
@@ -162,4 +161,5 @@ def repeat_text(ack, respond, command, body):
 if __name__ == "__main__":
 #     app.start(port=int(os.environ.get("PORT", 3000)))
     app.start(port=int(os.environ.get("PORT", 80)))
+
 # config tests
