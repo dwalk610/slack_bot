@@ -6,10 +6,6 @@ import datetime
 from slack_bolt import App
 import config
 
-# ------------------------------------------------
-# Set keys and tokens to env variables here
-# ------------------------------------------------
-
 def list_of_keys():
     '''
     1.The payload returned by slack when we use a 
@@ -31,6 +27,7 @@ def get_slash_data(slack_json):
 #      the list we defined in list_ok_keys
     filtered_dict = {k:v for k,v in slack_json.items() if k in key_list}
     return filtered_dict
+
 def format_for_at_upload(slack_json):
     '''
     1.This will return a dictionary that's formatted
@@ -47,25 +44,28 @@ def format_for_at_upload(slack_json):
     }
     list_dict_for_at = json.dumps(list_dict_for_at)
     return list_dict_for_at
-########################################
+
+# ------------------------------------------
 # airtable api data upload
-########################################
+# ------------------------------------------
 def airt_api_headers():
     airt_headers = {
-    'Authorization': f'Bearer {airt_api_token}',
+    'Authorization': f'Bearer {config.AIRT_API_TOKEN}',
     'Content-Type': 'application/json'
     }
     return airt_headers
+
 def airt_api_url():
     '''
     This will construct the airtable url
      which will be called to add a record
     '''
     airtable_api_url = 'https://api.airtable.com/v0/'
-    cust_fback_base_id = 'appPuvZYmQ84PioWi'
-    slack_bot_product_requests_table_id = 'tbl1L8UicdmyfrjHe'
+    cust_fback_base_id = config.CUST_FBACK_BASE_ID
+    slack_bot_product_requests_table_id = config.SLACK_BOT_PRODUCT_REQUESTS_TABLE_ID
     create_record_url = f'{airtable_api_url}{cust_fback_base_id}/{slack_bot_product_requests_table_id}'
     return create_record_url
+
 def airt_api_post(slack_json):
     post_request = requests.request(
         "POST",
@@ -76,5 +76,90 @@ def airt_api_post(slack_json):
     print(post_request.content)
     return post_request
 
-# test
-print(config.SLACK_BOT_TOKEN)
+# ------------------------------------------
+# SLACK APP
+# ------------------------------------------
+
+# Initialize your app with your bot token and signing secret
+app = App(
+#     token=slack_bot_token_test_wrong,
+    token=config.SLACK_BOT_TOKEN,
+    signing_secret=config.SLACK_SIGNING_SECRET,
+#     token=os.environ.get("SLACK_BOT_TOKEN"),
+#     signing_secret=os.environ.get("SLACK_SIGNING_SECRET"),
+)
+
+# Add functionality here later
+@app.event("app_home_opened")
+def update_home_tab(client, event, logger):
+  try:
+    # views.publish is the method that your app uses to push a view to the Home tab
+    client.views_publish(
+      # the user that opened your app's app home
+      user_id=event["user"],
+      # the view object that appears in the app home
+      view={
+        "type": "home",
+        "callback_id": "home_view",
+
+        # body of the view
+        "blocks": [
+          {
+            "type": "section",
+            "text": {
+              "type": "mrkdwn",
+              "text": "*Welcome to your _App's Home tab isn't it great!_* :tada:"
+            }
+          },
+          {
+            "type": "divider"
+          },
+          {
+            "type": "section",
+            "text": {
+              "type": "mrkdwn",
+              "text": "This button won't do much for now but you can set up a listener for it using the `actions()` method and passing its unique `action_id`. See an example in the `examples` folder within your Bolt app."
+            }
+          },
+          {
+            "type": "actions",
+            "elements": [
+              {
+                "type": "button",
+                "text": {
+                  "type": "plain_text",
+                  "text": "Click me!"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    )
+
+  except Exception as e:
+    logger.error(f"Error publishing home tab: {e}")
+
+# This will match any message that contains hi
+@app.message("hi")
+def say_hello(message, say):
+    user = message['user']
+    say(f"Hi there, <@{user}>!")
+
+# The echo command simply echoes on command
+@app.command("/product_req")
+def repeat_text(ack, respond, command, body):
+    # Acknowledge command request
+    ack()
+    respond(f"{command['text']}")
+#     Run a function that can save the text that was placed after the bot command
+#     list_test.append(command['text'])
+    airt_api_post(body)
+    print("ok got it")
+    print(body)
+
+# Ready? Start your app!
+if __name__ == "__main__":
+#     app.start(port=int(os.environ.get("PORT", 3000)))
+    app.start(port=int(os.environ.get("PORT", 80)))
+# config tests
